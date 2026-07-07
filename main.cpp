@@ -119,11 +119,27 @@ std::vector<ServerConfig> validation_config(const std::vector<std::string> &toke
 				if (i + 1 >= tokens.size() || tokens[++i] != ";")
 					throw std::runtime_error("Syntax error: expected ';' after listen");
 			}
+			else if (token == "root")
+			{
+				if (i + 1 >= tokens.size())
+					throw std::runtime_error("Error: missing value for root");
+				currentServer.setRoot(tokens[++i]);
+				if (i + 1 >= tokens.size() || tokens[++i] != ";")
+					throw std::runtime_error("Syntax error: expected ';' after root");
+			}
 			else if (token == "server_name")
 			{
 				if (i + 1 >= tokens.size())
 					throw std::runtime_error("Error: missing value for server_name");
-				currentServer.setHost(tokens[++i]);
+				size_t nameCount = 0;
+				while (i < tokens.size() && tokens[i + 1] != ";")
+				{
+					currentServer.setServerName(tokens[++i]);
+					nameCount++;
+				}
+				if (nameCount == 0)
+					throw std::runtime_error("Error: server_name directive has no value!");
+
 				if (i + 1 >= tokens.size() || tokens[++i] != ";")
 					throw std::runtime_error("Syntax error: expected ';' after server_name");
 			}
@@ -203,7 +219,12 @@ void parse_file(const std::string &filename)
 	for (size_t i = 0; i < servers.size(); ++i)
 	{
 		std::cout << "Server " << i + 1 << ":" << std::endl;
-		std::cout << "  Host: " << servers[i].getHost() << std::endl;
+		const std::vector<ServerName> &serverNames = servers[i].getServerNames();
+		for (size_t j = 0; j < serverNames.size(); ++j)
+		{
+			std::cout << "  Server Name: " << serverNames[j].name << std::endl;
+		}
+		std::cout << "  Root: " << servers[i].getRoot() << std::endl;
 		std::cout << "  Port: " << servers[i].getPort() << std::endl;
 		std::cout << "  Max Body Size: " << servers[i].getMaxBodySize() << std::endl;
 		const std::vector<Location> &locations = servers[i].getLocations();
@@ -212,6 +233,9 @@ void parse_file(const std::string &filename)
 			std::cout << "    Location " << j + 1 << ":" << std::endl;
 			std::cout << "      Path: " << locations[j].getPath() << std::endl;
 			std::cout << "      Root: " << locations[j].getRoot() << std::endl;
+			std::cout << "      Index: " << locations[j].getIndex() << std::endl;
+			std::cout << "      Autoindex: " << (locations[j].getAutoindex() ? "on" : "off") << std::endl;
+			std::cout << "      Redirection: " << locations[j].getRedirection() << std::endl;
 			const std::vector<std::string> &methods = locations[j].getMethods();
 			for (size_t k = 0; k < methods.size(); ++k)
 				std::cout << "      Method: " << methods[k] << std::endl;
@@ -232,7 +256,7 @@ int main(int argc, char **argv)
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr  << e.what() << std::endl;
+		std::cerr << e.what() << std::endl;
 		return 1;
 	}
 	return 0;
