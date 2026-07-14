@@ -98,11 +98,19 @@ std::vector<ServerConfig> validation_config(const std::vector<std::string> &toke
 			{
 				if (i + 1 >= tokens.size())
 					throw std::runtime_error("Error: Missing port number after 'listen'.");
-				std::string portStr = tokens[++i];
-
+				std::string host;
+				std::string portStr;
+				if (tokens[++i].find(":") != std::string::npos)
+				{
+					size_t colonPos = tokens[i].find(":");
+					portStr = tokens[i].substr(colonPos + 1);
+					host = tokens[i].substr(0, colonPos);
+					currentServer.setHost(host);
+				}
+				else
+					portStr = tokens[i];
 				if (portStr == ";")
 					throw std::runtime_error("Error: listen directive has no value!");
-
 				char *endptr;
 				errno = 0;
 				long portNum = std::strtol(portStr.c_str(), &endptr, 10);
@@ -113,11 +121,10 @@ std::vector<ServerConfig> validation_config(const std::vector<std::string> &toke
 					throw std::runtime_error("Error: Invalid characters in port number.");
 				if (portNum < 1 || portNum > 65535)
 					throw std::runtime_error("Error: Port out of valid range (1 - 65535).");
-
 				currentServer.setPort(static_cast<int>(portNum));
-
 				if (i + 1 >= tokens.size() || tokens[++i] != ";")
 					throw std::runtime_error("Syntax error: expected ';' after listen");
+
 			}
 			else if (token == "root")
 			{
@@ -143,14 +150,14 @@ std::vector<ServerConfig> validation_config(const std::vector<std::string> &toke
 				if (i + 1 >= tokens.size() || tokens[++i] != ";")
 					throw std::runtime_error("Syntax error: expected ';' after server_name");
 			}
-			else if (token == "max_body_size")
+			else if (token == "client_max_body_size")
 			{
 				if (i + 1 >= tokens.size())
-					throw std::runtime_error("Error: Missing value after 'max_body_size'.");
+					throw std::runtime_error("Error: Missing value after 'client_max_body_size'.");
 				std::string sizeStr = tokens[++i];
 
 				if (sizeStr == ";")
-					throw std::runtime_error("Error: max_body_size directive has no value!");
+					throw std::runtime_error("Error: client_max_body_size directive has no value!");
 				char *endptr;
 				errno = 0;
 				long sizeNum = std::strtol(sizeStr.c_str(), &endptr, 10);
@@ -162,10 +169,21 @@ std::vector<ServerConfig> validation_config(const std::vector<std::string> &toke
 				if (sizeNum < 1 || sizeNum > 1024 * 1024 * 1024)
 					throw std::runtime_error("Error: Size out of valid range.");
 
-				currentServer.setMaxBodySize(static_cast<size_t>(sizeNum));
+				currentServer.setClientMaxBodySize(static_cast<size_t>(sizeNum));
 
 				if (i + 1 >= tokens.size() || tokens[++i] != ";")
-					throw std::runtime_error("Syntax error: expected ';' after max_body_size");
+					throw std::runtime_error("Syntax error: expected ';' after client_max_body_size");
+			}
+			else if (token == "index")
+			{
+				if (i + 1 >= tokens.size())
+					throw std::runtime_error("Error: missing value for index");
+				while (i + 1 < tokens.size() && tokens[i + 1] != ";")
+				{
+					currentServer.addIndex(tokens[++i]);
+				}
+				if (i + 1 >= tokens.size() || tokens[++i] != ";")
+					throw std::runtime_error("Syntax error: expected ';' after index");
 			}
 			else
 				throw std::runtime_error("Unknown directive in server block: " + token);
@@ -226,7 +244,12 @@ void parse_file(const std::string &filename)
 		}
 		std::cout << "  Root: " << servers[i].getRoot() << std::endl;
 		std::cout << "  Port: " << servers[i].getPort() << std::endl;
-		std::cout << "  Max Body Size: " << servers[i].getMaxBodySize() << std::endl;
+		std::cout << "  Host: " << servers[i].getHost() << std::endl;
+		std::cout << "  Client Max Body Size: " << servers[i].getClientMaxBodySize() << std::endl;
+		for (size_t j = 0; j < servers[i].getIndexes().size(); ++j)
+		{
+			std::cout << "  Index: " << servers[i].getIndexes()[j] << std::endl;
+		}
 		const std::vector<Location> &locations = servers[i].getLocations();
 		for (size_t j = 0; j < locations.size(); ++j)
 		{

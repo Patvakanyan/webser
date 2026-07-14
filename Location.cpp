@@ -1,5 +1,7 @@
 #include "Location.hpp"
 
+#include <algorithm>
+
 Location::Location() : root(""), index("index.html") {}
 
 Location::~Location() {}
@@ -28,6 +30,10 @@ void Location::setPath(const std::string &p)
 }
 void Location::addMethod(const std::string &m)
 {
+	if (m != "GET" && m != "POST" && m != "DELETE")
+		throw std::runtime_error("Error: Invalid method: " + m);
+	if (std::find(methods.begin(), methods.end(), m) != methods.end())
+		throw std::runtime_error("Error: Duplicate method: " + m);
 	methods.push_back(m);
 }
 
@@ -55,16 +61,6 @@ void Location::setIndex(const std::string &i)
 {
 	index = i;
 }
-void Location::setAutoindex(bool a)
-{
-	autoindex = a;
-}
-
-void Location::setRedirection(const std::string &r)
-{
-	redirection = r;
-}
-
 
 bool Location::getAutoindex() const
 {

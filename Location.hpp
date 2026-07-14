@@ -25,8 +25,6 @@ public:
 	void addMethod(const std::string &m);
 	void setRoot(const std::string &r);
 	void setIndex(const std::string &i);
-	void setAutoindex(bool a);
-	void setRedirection(const std::string &r);
 
 	// Геттеры (использует РОЛЬ 3, когда генерирует ответ)
 	std::string getPath() const;
@@ -35,5 +33,5 @@ public:
 	std::string getIndex() const;
 	bool getAutoindex() const;
 	std::string getRedirection() const;
-	
+
 };
