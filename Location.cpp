@@ -62,6 +62,11 @@ void Location::setIndex(const std::string &i)
 	index = i;
 }
 
+void Location::setAutoIndex(const std::string &a)
+{
+	autoindex = (a == "on");
+}
+
 bool Location::getAutoindex() const
 {
 	return autoindex;
